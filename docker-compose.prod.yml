@@ -1,0 +1,50 @@
+version: "3.9"
+
+networks:
+  mern-network:
+    name: mern-network
+    driver: bridge
+
+volumes:
+  mongodb_data:
+
+services:
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile      # ใช้ Dockerfile โปรดักชันของ client
+    # ถ้ายังไม่มี Nginx/เสิร์ฟ static ใน Dockerfile:
+    # command: npm run preview -- --host 0.0.0.0 --port 3000
+    ports:
+      - "8880:3000"
+    networks:
+      - mern-network
+    restart: always
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile      # ใช้ Dockerfile โปรดักชันของ server
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/mern}
+      - NODE_ENV=production
+    ports:
+      - "5550:5000"
+    networks:
+      - mern-network
+    restart: always
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27099:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - mern-network
+    restart: always
